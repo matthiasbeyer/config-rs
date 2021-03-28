@@ -23,7 +23,7 @@ impl<'de> de::Deserializer<'de> for Value {
             ValueKind::Float(f) => visitor.visit_f64(f),
             ValueKind::String(s) => visitor.visit_string(s),
             ValueKind::Array(values) => visitor.visit_seq(SeqAccess::new(values)),
-            ValueKind::Table(map) => visitor.visit_map(MapAccess::new(map)),
+            ValueKind::Table(map) => visitor.visit_map(MapAccess::new(map, self.keys_case_sensitive, self.enum_variants_case_sensitive)),
         }
     }
 
@@ -128,6 +128,7 @@ impl<'de> de::Deserializer<'de> for Value {
         V: de::Visitor<'de>,
     {
         visitor.visit_enum(EnumAccess {
+            variants_case_sensitive: self.enum_variants_case_sensitive,
             value: self,
             name,
             variants,
@@ -196,12 +197,16 @@ impl<'de> de::SeqAccess<'de> for SeqAccess {
 
 struct MapAccess {
     elements: VecDeque<(String, Value)>,
+    keys_case_sensitive: bool,
+    enum_variants_case_sensitive: bool,
 }
 
 impl MapAccess {
-    fn new(table: HashMap<String, Value>) -> Self {
+    fn new(table: HashMap<String, Value>, keys_case_sensitive: bool, enum_variants_case_sensitive: bool) -> Self {
         MapAccess {
             elements: table.into_iter().collect(),
+            keys_case_sensitive,
+            enum_variants_case_sensitive,
         }
     }
 }
@@ -214,7 +219,9 @@ impl<'de> de::MapAccess<'de> for MapAccess {
         K: de::DeserializeSeed<'de>,
     {
         if let Some(&(ref key_s, _)) = self.elements.front() {
-            let key_de = Value::new(None, key_s as &str);
+            let mut key_de = Value::new(None, key_s as &str);
+            key_de.keys_case_sensitive = self.keys_case_sensitive;
+            key_de.enum_variants_case_sensitive = self.enum_variants_case_sensitive;
             let key = de::DeserializeSeed::deserialize(seed, key_de)?;
 
             Ok(Some(key))
@@ -236,13 +243,14 @@ struct EnumAccess {
     value: Value,
     name: &'static str,
     variants: &'static [&'static str],
+    variants_case_sensitive: bool,
 }
 
 impl EnumAccess {
     fn variant_deserializer(&self, name: &str) -> Result<StrDeserializer> {
         self.variants
             .iter()
-            .find(|&&s| s == name)
+            .find(|&&s| s == name || (!self.variants_case_sensitive && s.eq_ignore_ascii_case(name)))
             .map(|&s| StrDeserializer(s))
             .ok_or_else(|| self.no_constructor_error(name))
     }
@@ -349,7 +357,7 @@ impl<'de> de::Deserializer<'de> for Config {
             ValueKind::Float(f) => visitor.visit_f64(f),
             ValueKind::String(s) => visitor.visit_string(s),
             ValueKind::Array(values) => visitor.visit_seq(SeqAccess::new(values)),
-            ValueKind::Table(map) => visitor.visit_map(MapAccess::new(map)),
+            ValueKind::Table(map) => visitor.visit_map(MapAccess::new(map, self.keys_case_sensitive, self.enum_variants_case_sensitive)),
         }
     }
 
@@ -450,6 +458,7 @@ impl<'de> de::Deserializer<'de> for Config {
             value: self.cache,
             name,
             variants,
+            variants_case_sensitive: self.enum_variants_case_sensitive,
         })
     }
 

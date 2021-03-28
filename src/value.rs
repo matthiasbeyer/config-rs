@@ -136,6 +136,12 @@ pub struct Value {
 
     /// Underlying kind of the configuration value.
     pub kind: ValueKind,
+
+    /// Flag whether keys should be deserialized case-sensitive
+    pub(crate) keys_case_sensitive: bool,
+
+    /// Flag whether enum variants should be deserialized case-sensitive
+    pub(crate) enum_variants_case_sensitive: bool,
 }
 
 impl Value {
@@ -147,6 +153,8 @@ impl Value {
         Value {
             origin: origin.cloned(),
             kind: kind.into(),
+            keys_case_sensitive: true,
+            enum_variants_case_sensitive: true,
         }
     }
 
@@ -533,6 +541,8 @@ where
         Value {
             origin: None,
             kind: value.into(),
+            keys_case_sensitive: true,
+            enum_variants_case_sensitive: true,
         }
     }
 }

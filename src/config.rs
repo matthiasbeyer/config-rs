@@ -14,6 +14,8 @@ use crate::value::{Table, Value};
 /// A prioritized configuration repository. It maintains a set of
 /// configuration sources, fetches values to populate those, and provides
 /// them according to the source's priority.
+///
+/// By default, keys and enum variants are deserialized case sensitive, so "FOO" != "foo"
 #[derive(Clone, Debug)]
 pub struct Config {
     defaults: HashMap<path::Expression, Value>,
@@ -22,6 +24,12 @@ pub struct Config {
 
     /// Root of the cached configuration.
     pub cache: Value,
+
+    /// Flag whether keys should be deserialized case-sensitive
+    pub(crate) keys_case_sensitive: bool,
+
+    /// Flag whether enum variants should be deserialized case-sensitive
+    pub(crate) enum_variants_case_sensitive: bool,
 }
 
 impl Default for Config {
@@ -31,21 +39,28 @@ impl Default for Config {
             overrides: Default::default(),
             sources: Default::default(),
             cache: Value::new(None, Table::new()),
+            keys_case_sensitive: true,
+            enum_variants_case_sensitive: true,
         }
     }
 }
 
 impl Config {
-    pub(crate) fn new(value: Value) -> Self {
-        Config {
-            cache: value,
-            ..Default::default()
-        }
-    }
-
     /// Creates new [`ConfigBuilder`] instance
     pub fn builder() -> ConfigBuilder<DefaultState> {
         ConfigBuilder::<DefaultState>::default()
+    }
+
+    pub fn with_keys_case_sensitive(mut self, b: bool) -> Self {
+        self.keys_case_sensitive = b;
+        self.cache.keys_case_sensitive = b;
+        self
+    }
+
+    pub fn with_enum_variants_case_sensitive(mut self, b: bool) -> Self {
+        self.enum_variants_case_sensitive = b;
+        self.cache.enum_variants_case_sensitive = b;
+        self
     }
 
     /// Merge in a configuration property source.
