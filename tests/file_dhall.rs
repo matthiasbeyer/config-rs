@@ -8,7 +8,6 @@ extern crate serde;
 extern crate serde_derive;
 
 use std::collections::HashMap;
-use std::path::PathBuf;
 
 use config::*;
 use float_cmp::ApproxEqUlps;
