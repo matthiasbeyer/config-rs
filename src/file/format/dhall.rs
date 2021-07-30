@@ -25,9 +25,7 @@ fn from_dhall_value(uri: Option<&String>, value: serde_dhall::SimpleValue) -> Va
             serde_dhall::NumKind::Integer(i) => Value::new(uri, ValueKind::Integer(i)),
             serde_dhall::NumKind::Double(d) => Value::new(uri, ValueKind::Float(f64::from(d))),
         },
-        serde_dhall::SimpleValue::Text(string) => {
-            Value::new(uri, ValueKind::String(string))
-        }
+        serde_dhall::SimpleValue::Text(string) => Value::new(uri, ValueKind::String(string)),
         serde_dhall::SimpleValue::List(list) => Value::new(
             uri,
             ValueKind::Array(list.into_iter().map(|v| from_dhall_value(uri, v)).collect()),
