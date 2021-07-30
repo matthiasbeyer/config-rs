@@ -34,7 +34,7 @@ fn from_dhall_value(uri: Option<&String>, value: serde_dhall::SimpleValue) -> Va
             uri,
             ValueKind::Table(
                 rec.into_iter()
-                    .map(|(k, v)| (k.clone(), from_dhall_value(uri, v)))
+                    .map(|(k, v)| (k, from_dhall_value(uri, v)))
                     .collect(),
             ),
         ),
